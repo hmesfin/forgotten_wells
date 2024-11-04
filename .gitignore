@@ -272,7 +272,7 @@ tags
 dump.rdb
 
 ### Project template
-forgotten_wells/media/
+apps/media/
 
 .pytest_cache/
 .ipython/

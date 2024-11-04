@@ -1,3 +1,7 @@
+networks:
+  traefik_network:
+    external: true
+
 volumes:
   production_postgres_data: {}
   production_postgres_data_backups: {}
@@ -21,6 +25,17 @@ services:
       - ./.envs/.staging/.django
       - ./.envs/.staging/.postgres
     command: /start
+    networks:
+      - traefik_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.forgotten_wells_staging_django.rule=Host(`staging.gojjotech.com`)"
+      - "traefik.http.routers.forgotten_wells_staging_django.entrypoints=websecure"
+      - "traefik.http.services.forgotten_wells_staging_django.loadbalancer.server.port=8000"
+      - "traefik.http.routers.forgotten_wells_staging_django.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.forgotten_wells_staging_django.tls.domains[0].main=staging.gojjotech.com"
+      - "traefik.http.routers.forgotten_wells_staging_django.tls.domains[0].sans=*.staging.gojjotech.com"
+      - "traefik.docker.network=traefik_network"
 
   postgres:
     build:
@@ -32,6 +47,8 @@ services:
       - staging_postgres_data_backups:/backups
     env_file:
       - ./.envs/.staging/.postgres
+    networks:
+      - traefik_network
 
   traefik:
     build:
@@ -46,23 +63,35 @@ services:
       - '0.0.0.0:80:80'
       - '0.0.0.0:443:443'
       - '0.0.0.0:5555:5555'
+    command:
+    - "--providers.docker=true"
+    - "--providers.docker.exposedbydefault=false"
+    - "--providers.docker.network=traefik_network"
+    networks:
+      - traefik_network
 
   redis:
     image: docker.io/redis:6
     
     volumes:
       - staging_redis_data:/data
+    networks:
+      - traefik_network
     
 
   celeryworker:
     <<: *django
     image: forgotten_wells_staging_celeryworker
     command: /start-celeryworker
+    networks:
+      - traefik_network
 
   celerybeat:
     <<: *django
     image: forgotten_wells_staging_celerybeat
     command: /start-celerybeat
+    networks:
+      - traefik_network
 
   flower:
     <<: *django
@@ -77,3 +106,5 @@ services:
       - ./.envs/.staging/.django
     volumes:
       - staging_postgres_data_backups:/backups:z
+    networks:
+      - traefik_network

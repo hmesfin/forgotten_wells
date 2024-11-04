@@ -1,3 +1,7 @@
+networks:
+  traefik_network:
+    external: true
+    
 volumes:
   production_postgres_data: {}
   production_postgres_data_backups: {}
@@ -21,6 +25,16 @@ services:
       - ./.envs/.production/.django
       - ./.envs/.production/.postgres
     command: /start
+    networks:
+      - traefik_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.django_production.rule=Host(`forgottenwells.com`)"
+      - "traefik.http.services.django_production.loadbalancer.server.port=8000"
+      - "traefik.http.routers.django_production.entrypoints=websecure"
+      - "traefik.http.routers.django_production.tls.certresolver=letsencrypt"
+      - "traefik.docker.network=traefik_network"
+      
 
   postgres:
     build:
@@ -32,6 +46,8 @@ services:
       - production_postgres_data_backups:/backups
     env_file:
       - ./.envs/.production/.postgres
+    networks:
+      - traefik_network
 
   traefik:
     build:
@@ -46,28 +62,42 @@ services:
       - '0.0.0.0:80:80'
       - '0.0.0.0:443:443'
       - '0.0.0.0:5555:5555'
+    command:
+    - "--providers.docker=true"
+    - "--providers.docker.exposedbydefault=false"
+    - "--providers.docker.network=traefik_network"
+    networks:
+      - traefik_network 
 
   redis:
     image: docker.io/redis:6
     
     volumes:
       - production_redis_data:/data
+    networks:
+      - traefik_network
     
 
   celeryworker:
     <<: *django
     image: forgotten_wells_production_celeryworker
     command: /start-celeryworker
+    networks:
+      - traefik_network
 
   celerybeat:
     <<: *django
     image: forgotten_wells_production_celerybeat
     command: /start-celerybeat
+    networks:
+      - traefik_network
 
   flower:
     <<: *django
     image: forgotten_wells_production_flower
     command: /start-flower
+    networks:
+      - traefik_network
 
   awscli:
     build:
@@ -77,3 +107,5 @@ services:
       - ./.envs/.production/.django
     volumes:
       - production_postgres_data_backups:/backups:z
+    networks:
+      - traefik_network

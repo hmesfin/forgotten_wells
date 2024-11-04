@@ -3,11 +3,11 @@ networks:
     external: true
 
 volumes:
-  production_postgres_data: {}
-  production_postgres_data_backups: {}
-  production_traefik: {}
+  staging_postgres_data: {}
+  staging_postgres_data_backups: {}
+  staging_traefik: {}
   
-  production_redis_data: {}
+  staging_redis_data: {}
   
 
 
@@ -17,7 +17,7 @@ services:
       context: .
       dockerfile: ./compose/staging/django/Dockerfile
 
-    image: forgotten_wells_production_django
+    image: forgotten_wells_staging_django
     depends_on:
       - postgres
       - redis

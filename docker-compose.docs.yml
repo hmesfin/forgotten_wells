@@ -1,0 +1,16 @@
+services:
+  docs:
+    image: forgotten_wells_local_docs
+    container_name: forgotten_wells_local_docs
+    build:
+      context: .
+      dockerfile: ./compose/local/docs/Dockerfile
+    env_file:
+      - ./.envs/.local/.django
+    volumes:
+      - ./docs:/docs:z
+      - ./config:/app/config:z
+      - ./forgotten_wells:/app/forgotten_wells:z
+    ports:
+      - '9000:9000'
+    command: /start-docs
